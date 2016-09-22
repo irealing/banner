@@ -17,7 +17,7 @@ func main() {
 	flag.Parse()
 	log.SetOutputLevel(_level[*l])
 	if *inPath == "" || *outPath == "" || *concurrent < 1 {
-		log.Errorf("输入参数异常,if=%s;of=%s;go=%d", *inPath, *outPath, *concurrent)
+		log.Errorf("输入参数异常:\nif:输入文件;of:输出文件;\ngo:启动协程数", *inPath, *outPath, *concurrent)
 		os.Exit(1)
 	}
 	if *protocol != "http" && *protocol != "https" {
