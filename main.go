@@ -17,7 +17,7 @@ func main() {
 	flag.Parse()
 	log.SetOutputLevel(_level[*l])
 	if *inPath == "" || *outPath == "" || *concurrent < 1 {
-		log.Errorf("输入参数异常:\nif:输入文件;of:输出文件;\ngo:启动协程数", *inPath, *outPath, *concurrent)
+		log.Error("输入参数异常:\nif:输入文件;\nof:输出文件;\ngo:启动协程数")
 		os.Exit(1)
 	}
 	if *protocol != "http" && *protocol != "https" {
@@ -38,7 +38,12 @@ func start(i, o, p string, con uint) {
 		log.Fatal(err)
 	}
 	defer input.Close()
-	output, err := os.OpenFile(o, os.O_RDWR|os.O_APPEND, 0600)
+	var output *os.File
+	if _, err := os.Stat(o); os.IsNotExist(err) {
+		output, err = os.Create(o)
+	} else {
+		output, err = os.OpenFile(o, os.O_RDWR|os.O_APPEND, 0600)
+	}
 	if err != nil {
 		log.Fatal(err)
 	}

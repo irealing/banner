@@ -11,8 +11,6 @@ import (
 	"regexp"
 	"time"
 
-	"runtime"
-
 	"github.com/qiniu/log"
 )
 
@@ -87,7 +85,6 @@ type Scheduler struct {
 	writer   io.Writer
 	counter  uint
 	con      uint
-	curCon   uint
 	capturer *Capturer
 }
 
@@ -123,7 +120,7 @@ func (s *Scheduler) Run() uint {
 		}
 		s.wait(1)
 		waited += 1
-		log.Debug("waited ", waited)
+		log.Debug("waitd ", waited)
 	}
 	return s.counter
 }
@@ -145,12 +142,11 @@ func (s *Scheduler) makeTask(count chan uint) {
 	s.counter = n
 }
 func (s *Scheduler) start(id uint) {
-	s.curCon += 13
 	log.Debug("启动goroutine")
 	for {
 		host, ok := <-s.rChan
 		if !ok {
-			log.Debug("goroutine 退出", id)
+			log.Debug("goroutine 结束", id)
 			break
 		}
 		log.Debugf("goroutine %d 收到任务：%s", id, host)
@@ -160,10 +156,8 @@ func (s *Scheduler) start(id uint) {
 		}
 		s.wChan <- r
 	}
-	runtime.Goexit()
 }
 func (s *Scheduler) wait(n uint) {
-	log.Debug("waite", n)
 	var x uint
 	for ; x < n; x++ {
 		r := <-s.wChan
