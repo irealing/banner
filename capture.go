@@ -52,7 +52,7 @@ func (c *Capturer) Capture(t *Task) (*Result, error) {
 	if err != nil || resp.StatusCode != 200 {
 		return nil, err
 	}
-	log.Info("请求成功: ", t.URL)
+	log.Info("请求成功: ", t.URL())
 	defer resp.Body.Close()
 	server := resp.Header.Get("Server")
 	title, err := c.getTitle(resp.Body)
@@ -83,7 +83,7 @@ func (c *Capturer) request(url string) (*http.Response, error) {
 // NewCapturer 获取Capturer对象
 func NewCapturer() *Capturer {
 	transport := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
-	client := &http.Client{Timeout: 5 * time.Second, Transport: transport}
+	client := &http.Client{Timeout: 10 * time.Second, Transport: transport}
 	return &Capturer{client: client}
 }
 
@@ -143,18 +143,18 @@ func (s *Scheduler) makeTask(count chan uint) {
 		if err != nil {
 			log.Debug("文件读取结束")
 			close(s.rChan)
+			s.counter = n
 			count <- n
 			break
 		}
-		n += 1
 		host := string(line)
 		iter.Reset()
 		for iter.HasNext() {
+			n += 1
 			p := iter.Next()
 			s.rChan <- &Task{Host: host, Pro: p.Prot, Port: p.Port}
 		}
 	}
-	s.counter = n
 }
 func (s *Scheduler) start(id uint) {
 	log.Debug("启动goroutine")

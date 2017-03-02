@@ -33,10 +33,7 @@ func TestPortIter(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for {
-		if !iter.HasNext() {
-			break
-		}
+	for iter.HasNext() {
 		p := iter.Next()
 		t.Logf("protocol:%s\t port: %d \n", p.Prot, p.Port)
 	}

@@ -19,17 +19,16 @@ $go get git.oschina.net/irealing/banner
 ### 命令行参数
 
 ```
-if : 输入文件;
-of : 输出文件;
-go : 启动的协程数;
-P : 协议(http/https)
-l : 日志级别(debug/info/warn/error)
+-if : 输入文件;
+-of : 输出文件;
+-go : 启动的协程数;
+-l : 日志级别(debug/info/warn/error)
 ```
 * Unix-like系统限制ulimit数，go参数设置过大可能导致请求失败
 ### 示例
 
 ```
-$./binner -if input.txt -of target.txt -P http -go 100
+$./binner -if input.txt -of target.txt -go 100
 ```
 ### 输入文件格式
 
@@ -40,10 +39,6 @@ $./binner -if input.txt -of target.txt -P http -go 100
 211.149.249.24
 118.192.164.61
 118.126.142.116
-122.137.116.7
-119.97.166.136
-113.98.247.213
-112.127.134.16
 ```
 ### 输出文件格式
 
@@ -51,7 +46,10 @@ $./binner -if input.txt -of target.txt -P http -go 100
 118.244.113.239,***,***
 211.149.249.24,***,***
 118.126.142.116,***,***
-119.97.166.136,***,***
-112.127.134.16,***,***
-113.98.247.213,****,***
 ```
+### 自定义端口及协议
+添加`pots.csv`文件(目前未实现自定义端口文件名称),格式如下:
+https,443
+https,8443
+http,80
+http,8088
