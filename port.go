@@ -1,9 +1,11 @@
 package main
 
-import "errors"
-import "os"
-import "encoding/csv"
-import "strconv"
+import (
+	"errors"
+	"os"
+	"encoding/csv"
+	"strconv"
+)
 
 type Protocol string
 
@@ -35,7 +37,7 @@ func (pi *PortIter) Next() (p *Port) {
 }
 func (pi *PortIter) Reset() error {
 	if pi.ports == nil || len(pi.ports) == 0 {
-		return errors.New("port iter unuseful")
+		return errors.New("端口迭代器不可用")
 	}
 	pi.cursor = 0
 	return nil

@@ -1,25 +1,15 @@
 package main
 
 import (
-	"flag"
 	"os"
 
 	"github.com/qiniu/log"
+	"banner/config"
 )
 
 func main() {
-	inPath := flag.String("if", "", "输入文件")
-	outPath := flag.String("of", "", "输出文件")
-	concurrent := flag.Int("go", 50, "启动协程数")
-	l := flag.String("l", "debug", "日志级别")
-	_level := map[string]int{"debug": log.Ldebug, "info": log.Linfo, "warn": log.Lwarn, "error": log.Lerror}
-	flag.Parse()
-	log.SetOutputLevel(_level[*l])
-	if *inPath == "" || *outPath == "" || *concurrent < 1 {
-		log.Error("输入参数异常:\nif:输入文件;\nof:输出文件;\ngo:启动协程数")
-		os.Exit(1)
-	}
-	start(*inPath, *outPath, uint(*concurrent))
+	cfg := config.DefaultConfig
+	start(cfg.Input, cfg.Output, cfg.Go)
 }
 
 // start 启动

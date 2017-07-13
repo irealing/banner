@@ -3,3 +3,5 @@
 *.err
 *.out
 *.txt
+.idea/
+banner*
