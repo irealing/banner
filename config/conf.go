@@ -26,7 +26,7 @@ type AppConfig struct {
 	Go     uint `param:"go"`
 	Input  string `param:"if"`
 	Output string `param:"of"`
-	Log    string `param:"l"`
+	Log    string `param:"log"`
 	Port   string `param:"port"`
 }
 

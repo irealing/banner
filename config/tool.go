@@ -52,10 +52,32 @@ func (ap *ArgsParser) regField(i int, st *reflect.StructField) {
 		ap.values[i] = flag.String(param, emptyString, emptyString)
 	case reflect.Int:
 		ap.values[i] = flag.Int(param, 0, emptyString)
+	case reflect.Uint:
+		ap.values[i] = flag.Uint(param, 0, emptyString)
 	}
 }
+func (ap *ArgsParser) rejectValues() {
+	value := reflect.ValueOf(ap.args).Elem()
+	for i, v := range ap.values {
+		switch v.(type) {
+		case nil:
+			continue
+		case *string:
+			s := v.(*string)
+			value.Field(i).SetString(*s)
+		case *int:
+			iv := v.(*int)
+			value.Field(i).SetInt(int64(*iv))
+		case *uint:
+			uiv := v.(*uint)
+			value.Field(i).SetUint(uint64(*uiv))
+		}
+	}
+}
+
 func (ap *ArgsParser) Parse() error {
 	flag.Parse()
+	ap.rejectValues()
 	err := ap.args.Validate()
 	if err != nil {
 		flag.PrintDefaults()
