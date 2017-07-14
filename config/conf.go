@@ -2,7 +2,7 @@ package config
 
 import (
 	"errors"
-	"log"
+	"github.com/qiniu/log"
 )
 
 const (
@@ -12,7 +12,10 @@ const (
 	errorInfo         string = "参数异常"
 )
 
-var DefaultConfig = &AppConfig{}
+var (
+	DefaultConfig = &AppConfig{}
+	logLevel      = map[string]int{"debug": log.Ldebug, "info": log.Linfo, "warn": log.Lwarn}
+)
 
 func init() {
 	ap := ArgsParser{args: DefaultConfig}
@@ -31,7 +34,7 @@ type AppConfig struct {
 }
 
 func (ac *AppConfig) Validate() (err error) {
-	if ac.Go <= 0 {
+	if ac.Go == 0 {
 		ac.Go = defaultConcurrent
 	}
 	if ac.Port == emptyString {
@@ -40,5 +43,10 @@ func (ac *AppConfig) Validate() (err error) {
 	if ac.Input == emptyString || ac.Output == emptyString {
 		err = errors.New(errorInfo)
 	}
+	level, ok := logLevel[ac.Log]
+	if !ok {
+		level = log.Linfo
+	}
+	log.SetOutputLevel(level)
 	return
 }

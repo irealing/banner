@@ -12,7 +12,7 @@ func main() {
 	start(cfg.Input, cfg.Output, cfg.Go)
 }
 
-// start 启动
+// work 启动
 func start(i, o string, con uint) {
 	// i 输入文件名
 	//  o 输出文件名

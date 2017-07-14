@@ -7,3 +7,5 @@
 banner*
 debug/
 *.csv
+*.o
+*.so

@@ -14,7 +14,10 @@ import (
 	"github.com/qiniu/log"
 )
 
-const regex_title = "(?i)<title>.*</title>"
+const (
+	regexTitle = "(?i)<title>.*</title>"
+	userAgent  = "Mozilla/5.0 (Linux; Android 5.0; SM-G900P Build/LRX21T) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.23 Mobile Safari/537.36"
+)
 
 // Result 处理结果
 type Result struct {
@@ -62,12 +65,12 @@ func (c *Capturer) getTitle(r io.Reader) (string, error) {
 	buf := bytes.Buffer{}
 	defer buf.Reset()
 	buf.ReadFrom(r)
-	re := regexp.MustCompile(regex_title)
+	re := regexp.MustCompile(regexTitle)
 	value := re.FindString(buf.String())
 	if value == "" {
 		return value, errors.New("找不到结果")
 	}
-	return value[7 : len(value)-8], nil
+	return value[7: len(value)-8], nil
 }
 
 func (c *Capturer) request(url string) (*http.Response, error) {
@@ -76,7 +79,7 @@ func (c *Capturer) request(url string) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add("User-Agent", "Mozilla/5.0 (Linux; Android 5.0; SM-G900P Build/LRX21T) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.23 Mobile Safari/537.36")
+	req.Header.Add("User-Agent", userAgent)
 	return client.Do(req)
 }
 
@@ -98,10 +101,17 @@ type Scheduler struct {
 	capturer *Capturer
 }
 
-//NewScheduler 创建Schema
+//NewScheduler 创建Scheduler
 func NewScheduler(con uint, r io.Reader, w io.Writer) *Scheduler {
-	capturer := NewCapturer()
-	scheduler := &Scheduler{wChan: make(chan *Result, con), rChan: make(chan *Task, con), con: con, reader: r, writer: w, capturer: capturer}
+	c := NewCapturer()
+	scheduler := &Scheduler{
+		wChan:    make(chan *Result, con),
+		rChan:    make(chan *Task, con),
+		con:      con,
+		reader:   r,
+		writer:   w,
+		capturer: c,
+	}
 	return scheduler
 }
 
@@ -109,7 +119,7 @@ func NewScheduler(con uint, r io.Reader, w io.Writer) *Scheduler {
 func (s *Scheduler) Run() uint {
 	var i uint
 	for i = 0; i < s.con; i++ {
-		go s.start(i)
+		go s.work(i)
 	}
 	countChan := make(chan uint)
 	go s.makeTask(countChan)
@@ -156,7 +166,7 @@ func (s *Scheduler) makeTask(count chan uint) {
 		}
 	}
 }
-func (s *Scheduler) start(id uint) {
+func (s *Scheduler) work(id uint) {
 	log.Debug("启动goroutine")
 	for {
 		host, ok := <-s.rChan
