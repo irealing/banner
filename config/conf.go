@@ -15,7 +15,7 @@ const (
 var DefaultConfig = &AppConfig{}
 
 func init() {
-	ap := ArgsParser{DefaultConfig}
+	ap := ArgsParser{args: DefaultConfig}
 	ap.Init()
 	if err := ap.Parse(); err != nil {
 		log.Fatal(err)
