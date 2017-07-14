@@ -5,15 +5,10 @@ import (
 	"os"
 	"encoding/csv"
 	"strconv"
+	"banner/config"
 )
 
 type Protocol string
-
-const (
-	HTTPProtocol  Protocol = "http"
-	HTTPSProtocal Protocol = "https"
-	portFile               = "ports.csv"
-)
 
 // Port 端口
 type Port struct {
@@ -97,7 +92,7 @@ func (pg *PortGetter) Iter() (*PortIter, error) {
 
 // NewPortGetter 返回已初始化的PortGetter
 func NewPortGetter() (pg *PortGetter) {
-	pg = &PortGetter{filename: portFile}
+	pg = &PortGetter{filename: config.DefaultConfig.Port}
 	pg.Init()
 	return
 }
