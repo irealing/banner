@@ -8,6 +8,7 @@ import (
 
 const (
 	paramKey = "param"
+	usageKey = "usage"
 )
 
 var (
@@ -44,16 +45,17 @@ func (ap *ArgsParser) register() error {
 }
 func (ap *ArgsParser) regField(i int, st *reflect.StructField) {
 	param := st.Tag.Get(paramKey)
+	usage := st.Tag.Get(usageKey)
 	if param == emptyString {
 		return
 	}
 	switch st.Type.Kind() {
 	case reflect.String:
-		ap.values[i] = flag.String(param, emptyString, emptyString)
+		ap.values[i] = flag.String(param, emptyString, usage)
 	case reflect.Int:
-		ap.values[i] = flag.Int(param, 0, emptyString)
+		ap.values[i] = flag.Int(param, 0, usage)
 	case reflect.Uint:
-		ap.values[i] = flag.Uint(param, 0, emptyString)
+		ap.values[i] = flag.Uint(param, 0, usage)
 	}
 }
 func (ap *ArgsParser) rejectValues() {
