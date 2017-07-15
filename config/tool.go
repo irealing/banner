@@ -56,6 +56,8 @@ func (ap *ArgsParser) regField(i int, st *reflect.StructField) {
 		ap.values[i] = flag.Int(param, 0, usage)
 	case reflect.Uint:
 		ap.values[i] = flag.Uint(param, 0, usage)
+	case reflect.Bool:
+		ap.values[i] = flag.Bool(param, false, usage)
 	}
 }
 func (ap *ArgsParser) rejectValues() {
@@ -73,6 +75,9 @@ func (ap *ArgsParser) rejectValues() {
 		case *uint:
 			uiv := v.(*uint)
 			value.Field(i).SetUint(uint64(*uiv))
+		case *bool:
+			bv := v.(*bool)
+			value.Field(i).SetBool(*bv)
 		}
 	}
 }

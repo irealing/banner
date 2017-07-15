@@ -31,7 +31,7 @@ $ go build
 -if : 输入文件;
 -of : 输出文件;
 -go : 启动的协程数;
--log : 日志级别(debug/info/warn)
+-log : 日志级别(debug/info/warn/error)
 -port : 端口文件名
 ```
 *Unix-like系统限制ulimit数，go参数设置过大可能导致请求失败*

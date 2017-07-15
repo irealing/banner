@@ -42,7 +42,7 @@ func (ac *AppConfig) Validate() (err error) {
 	if ac.Input == emptyString || ac.Output == emptyString {
 		err = errors.New(errorInfo)
 	}
-	logLevel := map[string]int{"debug": log.Ldebug, "info": log.Linfo, "warn": log.Lwarn}
+	logLevel := map[string]int{"debug": log.Ldebug, "info": log.Linfo, "warn": log.Lwarn, "error": log.Lerror}
 	level, ok := logLevel[ac.Log]
 	if !ok {
 		level = log.Linfo
