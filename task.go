@@ -138,31 +138,35 @@ func (tm *taskMaker) Run() error {
 	it, _ := tm.pg.Iter()
 loop:
 	for {
-		select {
-		case <-tm.ctx.Done():
-			break loop
-		default:
-		}
 		line, _, err := reader.ReadLine()
-		if err != nil {
-			log.Info("file over")
-			break loop
-		}
 		host := string(line)
+		if err != nil {
+			log.Warn("read file error", err)
+			break
+		}
 		it.Reset()
 		for it.HasNext() {
-			p := it.Next()
-			log.Println("push new task ", p.Proto, host, p.Port)
-			task := &Task{Host: host, Pro: p.Proto, Port: p.Port, Ack: tm}
-			tm.ch <- task
+			select {
+			case <-tm.ctx.Done():
+				log.Debug("taskMaker context done")
+				break loop
+			default:
+				p := it.Next()
+				log.Println("push new task ", p.Proto, host, p.Port)
+				task := &Task{Host: host, Pro: p.Proto, Port: p.Port, Ack: tm}
+				tm.ch <- task
+			}
 		}
 	}
+	log.Debug("wait all ready tasks ack")
 	tm.wg.Wait()
 	return nil
 }
 func (tm *taskMaker) Ready() {
+	log.Debug("task ready")
 	tm.wg.Add(1)
 }
 func (tm *taskMaker) Ack() {
+	log.Debug("task done")
 	tm.wg.Done()
 }
