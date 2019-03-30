@@ -13,6 +13,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer scheduler.Close()
 	go func(sch *Scheduler) {
 		sign := make(chan os.Signal)
 		signal.Notify(sign, os.Interrupt, syscall.SIGTERM, syscall.SIGKILL)
