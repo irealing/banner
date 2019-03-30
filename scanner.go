@@ -36,6 +36,7 @@ loop:
 				log.Println("task queue closed")
 				break loop
 			}
+			log.Println("recv new task", task.Pro, task.Host, task.Port)
 			if ret, err := scanner.capture(task); err != nil {
 				continue loop
 			} else {
@@ -56,6 +57,7 @@ func (scanner *Scanner) capture(task *Task) (*Result, error) {
 	return &Result{Host: task.Host, Pro: task.Pro, Port: task.Port, Server: server, Title: title}, nil
 }
 func (scanner *Scanner) request(url string) (*http.Response, error) {
+	log.Println("request url ", url)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err

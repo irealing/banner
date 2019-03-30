@@ -105,12 +105,12 @@ func (pg *PortGetter) Iter() (*portIterator, error) {
 type taskMaker struct {
 	ctx    context.Context
 	cancel context.CancelFunc
-	ch     chan<- *Task
+	ch     chan *Task
 	pg     *PortGetter
 	input  io.ReadWriteCloser
 }
 
-func newMaker(host, port string, ctx context.Context, ch chan<- *Task) (*taskMaker, error) {
+func newMaker(host, port string, ctx context.Context) (*taskMaker, error) {
 	pg, err := NewPortGetter(port)
 	if err != nil {
 		return nil, err
@@ -120,11 +120,16 @@ func newMaker(host, port string, ctx context.Context, ch chan<- *Task) (*taskMak
 		return nil, err
 	}
 	c, cl := context.WithCancel(ctx)
+	ch := make(chan *Task)
 	return &taskMaker{ctx: c, cancel: cl, ch: ch, pg: pg, input: input}, nil
+}
+func (tm *taskMaker) channel() <-chan *Task {
+	return tm.ch
 }
 func (tm *taskMaker) Close() {
 	tm.cancel()
 	tm.input.Close()
+	close(tm.ch)
 }
 func (tm *taskMaker) Run() error {
 	reader := bufio.NewReader(tm.input)
@@ -145,6 +150,7 @@ loop:
 		it.Reset()
 		for it.HasNext() {
 			p := it.Next()
+			log.Println("push new task ", p.Proto, host, p.Port)
 			tm.ch <- &Task{Host: host, Pro: p.Proto, Port: p.Port}
 		}
 	}

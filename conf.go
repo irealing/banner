@@ -32,6 +32,7 @@ type AppConfig struct {
 	Output string `param:"of" usage:"输出文件"`
 	Log    string `param:"log" usage:"日志级别"`
 	Port   string `param:"port" usage:"端口列表文件"`
+	TTL    int    `param:"ttl" usage:"请求超时时间"`
 }
 
 func (ac *AppConfig) Validate() (err error) {
