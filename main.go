@@ -13,11 +13,15 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer scheduler.Close()
 	go func(sch *Scheduler) {
 		sign := make(chan os.Signal)
 		signal.Notify(sign, os.Interrupt, syscall.SIGTERM, syscall.SIGKILL)
 		log.Warn("Receive signal", <-sign)
 		scheduler.Close()
 	}(scheduler)
-	scheduler.Run()
+	err = scheduler.Run()
+	if err != nil {
+		log.Warn("scheduler run error", err)
+	}
 }
