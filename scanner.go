@@ -9,9 +9,13 @@ import (
 	"regexp"
 	"errors"
 	"sync"
+	"sync/atomic"
 )
 
+var globalScannerId int32
+
 type Scanner struct {
+	id     int32
 	ctx    context.Context
 	cancel context.CancelFunc
 	task   <-chan *Task
@@ -21,15 +25,19 @@ type Scanner struct {
 }
 
 func NewScanner(ctx context.Context, tc <-chan *Task, w chan<- *Result, client *http.Client, wg *sync.WaitGroup) *Scanner {
+	id := atomic.AddInt32(&globalScannerId, 1)
 	c, cl := context.WithCancel(ctx)
-	return &Scanner{ctx: c, cancel: cl, task: tc, writer: w, client: client, wg: wg}
+	return &Scanner{id: id, ctx: c, cancel: cl, task: tc, writer: w, client: client, wg: wg}
+}
+func (scanner *Scanner) ID() int32 {
+	return scanner.id
 }
 func (scanner *Scanner) Run() {
 loop:
 	for {
 		select {
 		case <-scanner.ctx.Done():
-			log.Info("context done")
+			log.Info("scanner context done", scanner.id)
 			break loop
 		case task, ok := <-scanner.task:
 			if !ok {
@@ -48,6 +56,7 @@ loop:
 		}
 	}
 	scanner.wg.Done()
+	log.Debug("scanner done", scanner.id)
 }
 func (scanner *Scanner) capture(task *Task) (*Result, error) {
 	resp, err := scanner.request(task.URL())
