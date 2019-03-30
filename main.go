@@ -20,5 +20,8 @@ func main() {
 		log.Warn("Receive signal", <-sign)
 		scheduler.Close()
 	}(scheduler)
-	scheduler.Run()
+	err = scheduler.Run()
+	if err != nil {
+		log.Warn("scheduler run error", err)
+	}
 }
