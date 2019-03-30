@@ -1,8 +1,9 @@
-package config
+package main
 
 import (
 	"errors"
 	"github.com/qiniu/log"
+	"github.com/irealing/argsparser"
 )
 
 const (
@@ -17,15 +18,16 @@ var (
 )
 
 func init() {
-	ap := ArgsParser{args: DefaultConfig}
+	ap := argsparser.New(DefaultConfig)
 	ap.Init()
 	if err := ap.Parse(); err != nil {
+		ap.PrintHelp()
 		log.Fatal(err)
 	}
 }
 
 type AppConfig struct {
-	Go     uint `param:"go" usage:"并发数"`
+	Go     uint   `param:"go" usage:"并发数"`
 	Input  string `param:"if" usage:"URL地址列表文件"`
 	Output string `param:"of" usage:"输出文件"`
 	Log    string `param:"log" usage:"日志级别"`

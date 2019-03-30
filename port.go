@@ -5,7 +5,6 @@ import (
 	"os"
 	"encoding/csv"
 	"strconv"
-	"banner/config"
 )
 
 type Protocol string
@@ -92,7 +91,7 @@ func (pg *PortGetter) Iter() (*PortIter, error) {
 
 // NewPortGetter 返回已初始化的PortGetter
 func NewPortGetter() (pg *PortGetter) {
-	pg = &PortGetter{filename: config.DefaultConfig.Port}
+	pg = &PortGetter{filename: DefaultConfig.Port}
 	pg.Init()
 	return
 }

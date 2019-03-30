@@ -4,11 +4,10 @@ import (
 	"os"
 
 	"github.com/qiniu/log"
-	"banner/config"
 )
 
 func main() {
-	cfg := config.DefaultConfig
+	cfg := DefaultConfig
 	start(cfg.Input, cfg.Output, cfg.Go)
 }
 
