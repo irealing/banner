@@ -6,7 +6,7 @@ import (
 	"os"
 	"net/http"
 	"fmt"
-	"log"
+	"github.com/qiniu/log"
 	"time"
 )
 
@@ -54,7 +54,7 @@ loop:
 			break loop
 		case r, ok := <-scheduler.writeChan:
 			if ok && r != nil {
-				log.Print("recv result ", r.String())
+				log.Info("recv result ", r.String())
 				scheduler.writer.WriteString(fmt.Sprintf("%s,%d,%s,%s\n", r.Host, r.Port, r.Server, r.Title))
 			} else if !ok {
 				break loop
