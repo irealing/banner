@@ -1,13 +1,23 @@
 package main
 
-import "log"
+import (
+	"github.com/qiniu/log"
+	"os"
+	"os/signal"
+	"syscall"
+)
 
 func main() {
 	cfg := DefaultConfig
-	if scheduler, err := NewScheduler(cfg); err != nil {
+	scheduler, err := NewScheduler(cfg)
+	if err != nil {
 		log.Fatal(err)
-	} else {
-		defer scheduler.Close()
-		scheduler.Run()
 	}
+	go func(sch *Scheduler) {
+		sign := make(chan os.Signal)
+		signal.Notify(sign, os.Interrupt, syscall.SIGTERM, syscall.SIGKILL)
+		log.Warn("Receive signal", <-sign)
+		scheduler.Close()
+	}(scheduler)
+	scheduler.Run()
 }

@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"log"
+	"github.com/qiniu/log"
 	"net/http"
 	"io"
 	"bytes"
@@ -29,20 +29,22 @@ loop:
 	for {
 		select {
 		case <-scanner.ctx.Done():
-			log.Print("context done")
+			log.Info("context done")
 			break loop
 		case task, ok := <-scanner.task:
 			if !ok {
-				log.Println("task queue closed")
+				log.Info("task queue closed")
 				break loop
 			}
-			log.Println("recv new task", task.Pro, task.Host, task.Port)
-			if ret, err := scanner.capture(task); err != nil {
+			log.Debug("recv new task", task.Pro, task.Host, task.Port)
+			task.Ack.Ready()
+			ret, err := scanner.capture(task)
+			task.Ack.Ack()
+			if err != nil {
 				continue loop
 			} else {
 				scanner.writer <- ret
 			}
-			task.Ack()
 		}
 	}
 	scanner.wg.Done()
@@ -58,9 +60,10 @@ func (scanner *Scanner) capture(task *Task) (*Result, error) {
 	return &Result{Host: task.Host, Pro: task.Pro, Port: task.Port, Server: server, Title: title}, nil
 }
 func (scanner *Scanner) request(url string) (*http.Response, error) {
-	log.Println("request url ", url)
+	log.Debug("request url ", url)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
+		log.Debug("failed to load", err)
 		return nil, err
 	}
 	req.Header.Add("User-Agent", userAgent)

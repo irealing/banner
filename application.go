@@ -6,7 +6,7 @@ import (
 	"os"
 	"net/http"
 	"fmt"
-	"log"
+	"github.com/qiniu/log"
 	"time"
 )
 
@@ -17,6 +17,7 @@ type Scheduler struct {
 	writer    *os.File
 	writeChan chan *Result
 	cfg       *AppConfig
+	closeOnce sync.Once
 }
 
 func NewScheduler(cfg *AppConfig) (*Scheduler, error) {
@@ -54,7 +55,7 @@ loop:
 			break loop
 		case r, ok := <-scheduler.writeChan:
 			if ok && r != nil {
-				log.Print("recv result ", r.String())
+				log.Info("recv result ", r.String())
 				scheduler.writer.WriteString(fmt.Sprintf("%s,%d,%s,%s\n", r.Host, r.Port, r.Server, r.Title))
 			} else if !ok {
 				break loop
@@ -63,6 +64,10 @@ loop:
 	}
 }
 func (scheduler *Scheduler) Close() {
+	scheduler.closeOnce.Do(scheduler.close)
+}
+func (scheduler *Scheduler) close() {
+	log.Info("scheduler exit...")
 	scheduler.cancel()
 	scheduler.wg.Wait()
 	close(scheduler.writeChan)
