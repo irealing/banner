@@ -9,3 +9,5 @@ debug/
 *.csv
 *.o
 *.so
+vendor/
+*.sum

@@ -1,15 +1,16 @@
-package config
+package main
 
 import (
 	"errors"
 	"github.com/qiniu/log"
+	"github.com/irealing/argsparser"
 )
 
 const (
-	defaultConcurrent uint   = 10
-	emptyString       string = ""
-	defaultPortFile   string = "ports.csv"
-	errorInfo         string = "参数异常"
+	defaultConcurrent uint = 10
+	emptyString            = ""
+	defaultPortFile        = "ports.csv"
+	errorInfo              = "参数异常"
 )
 
 var (
@@ -17,19 +18,21 @@ var (
 )
 
 func init() {
-	ap := ArgsParser{args: DefaultConfig}
+	ap := argsparser.New(DefaultConfig)
 	ap.Init()
 	if err := ap.Parse(); err != nil {
+		ap.PrintHelp()
 		log.Fatal(err)
 	}
 }
 
 type AppConfig struct {
-	Go     uint `param:"go" usage:"并发数"`
+	Go     uint   `param:"go" usage:"并发数"`
 	Input  string `param:"if" usage:"URL地址列表文件"`
 	Output string `param:"of" usage:"输出文件"`
 	Log    string `param:"log" usage:"日志级别"`
 	Port   string `param:"port" usage:"端口列表文件"`
+	TTL    int    `param:"ttl" usage:"请求超时时间"`
 }
 
 func (ac *AppConfig) Validate() (err error) {
