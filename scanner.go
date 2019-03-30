@@ -42,6 +42,7 @@ loop:
 			} else {
 				scanner.writer <- ret
 			}
+			task.Ack()
 		}
 	}
 	scanner.wg.Done()

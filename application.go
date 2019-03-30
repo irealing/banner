@@ -14,9 +14,7 @@ type Scheduler struct {
 	ctx       context.Context
 	cancel    context.CancelFunc
 	wg        *sync.WaitGroup
-	tm        *taskMaker
 	writer    *os.File
-	taskChan  <-chan *Task
 	writeChan chan *Result
 	cfg       *AppConfig
 }
@@ -28,23 +26,25 @@ func NewScheduler(cfg *AppConfig) (*Scheduler, error) {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	writeChan := make(chan *Result, cfg.Go)
-	tm, err := newMaker(cfg.Input, cfg.Port, ctx)
-	if err != nil {
-		return nil, err
-	}
 	wg := &sync.WaitGroup{}
-	return &Scheduler{cfg: cfg, ctx: ctx, cancel: cancel, wg: wg, tm: tm, writer: writer, taskChan: tm.channel(), writeChan: writeChan}, nil
+	return &Scheduler{cfg: cfg, ctx: ctx, cancel: cancel, wg: wg, writer: writer, writeChan: writeChan}, nil
 }
-func (scheduler *Scheduler) Run() {
+func (scheduler *Scheduler) Run() error {
+	cfg := scheduler.cfg
+	tm, err := newMaker(cfg.Input, cfg.Port, scheduler.ctx)
+	if err != nil {
+		return err
+	}
+	defer tm.Close()
 	var i uint
 	for ; i < scheduler.cfg.Go; i++ {
 		http.DefaultClient.Timeout = time.Duration(scheduler.cfg.TTL) * time.Second
-		s := NewScanner(scheduler.ctx, scheduler.taskChan, scheduler.writeChan, http.DefaultClient, scheduler.wg)
+		s := NewScanner(scheduler.ctx, tm.channel(), scheduler.writeChan, http.DefaultClient, scheduler.wg)
 		scheduler.wg.Add(1)
 		go s.Run()
 	}
-	go scheduler.tm.Run()
-	scheduler.save()
+	go scheduler.save()
+	return tm.Run()
 }
 func (scheduler *Scheduler) save() {
 loop:
@@ -64,7 +64,6 @@ loop:
 }
 func (scheduler *Scheduler) Close() {
 	scheduler.cancel()
-	scheduler.tm.Close()
 	scheduler.wg.Wait()
 	close(scheduler.writeChan)
 	scheduler.writer.Close()

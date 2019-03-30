@@ -23,10 +23,12 @@ func (r *Result) String() string {
 	return fmt.Sprintf("{Host: %s, Server: %s,Title: %s}", r.Host, r.Server, r.Title)
 }
 
+type TaskDone func()
 type Task struct {
 	Host string
 	Port uint
 	Pro  Protocol
+	Ack  TaskDone
 }
 
 func (t *Task) URL() string {
