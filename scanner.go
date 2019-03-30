@@ -13,6 +13,7 @@ import (
 
 type Scanner struct {
 	ctx    context.Context
+	cancel context.CancelFunc
 	task   <-chan *Task
 	writer chan<- *Result
 	client *http.Client
@@ -20,7 +21,8 @@ type Scanner struct {
 }
 
 func NewScanner(ctx context.Context, tc <-chan *Task, w chan<- *Result, client *http.Client, wg *sync.WaitGroup) *Scanner {
-	return &Scanner{ctx: ctx, task: tc, writer: w, client: client, wg: wg}
+	c, cl := context.WithCancel(ctx)
+	return &Scanner{ctx: c, cancel: cl, task: tc, writer: w, client: client, wg: wg}
 }
 func (scanner *Scanner) Run() {
 loop:
@@ -72,4 +74,7 @@ func (scanner *Scanner) getTitle(r io.Reader) (string, error) {
 		return value, errors.New("找不到结果")
 	}
 	return value[7: len(value)-8], nil
+}
+func (scanner *Scanner) Close() {
+	scanner.cancel()
 }

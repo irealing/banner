@@ -35,6 +35,6 @@ func TestPortIter(t *testing.T) {
 	}
 	for iter.HasNext() {
 		p := iter.Next()
-		t.Logf("protocol:%s\t port: %d \n", p.Prot, p.Port)
+		t.Logf("protocol:%s\t port: %d \n", p.Proto, p.Port)
 	}
 }

@@ -146,7 +146,9 @@ func (s *Scheduler) Run() uint {
 }
 func (s *Scheduler) makeTask(count chan uint) {
 	reader := bufio.NewReader(s.reader)
-	iter, _ := NewPortGetter().Iter()
+	pg, _ := NewPortGetter(DefaultConfig.Port)
+
+	iter, _ := pg.Iter()
 	var n uint
 	for {
 		line, _, err := reader.ReadLine()
@@ -162,7 +164,7 @@ func (s *Scheduler) makeTask(count chan uint) {
 		for iter.HasNext() {
 			n += 1
 			p := iter.Next()
-			s.rChan <- &Task{Host: host, Pro: p.Prot, Port: p.Port}
+			s.rChan <- &Task{Host: host, Pro: p.Proto, Port: p.Port}
 		}
 	}
 }
