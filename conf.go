@@ -7,10 +7,10 @@ import (
 )
 
 const (
-	defaultConcurrent uint   = 10
-	emptyString       string = ""
-	defaultPortFile   string = "ports.csv"
-	errorInfo         string = "参数异常"
+	defaultConcurrent uint = 10
+	emptyString            = ""
+	defaultPortFile        = "ports.csv"
+	errorInfo              = "参数异常"
 )
 
 var (

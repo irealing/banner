@@ -9,6 +9,7 @@ import (
 	"io"
 	"bufio"
 	"github.com/qiniu/log"
+	"sync"
 )
 
 type Protocol string
@@ -108,6 +109,7 @@ type taskMaker struct {
 	ch     chan *Task
 	pg     *PortGetter
 	input  io.ReadWriteCloser
+	wg     *sync.WaitGroup
 }
 
 func newMaker(host, port string, ctx context.Context) (*taskMaker, error) {
@@ -121,7 +123,7 @@ func newMaker(host, port string, ctx context.Context) (*taskMaker, error) {
 	}
 	c, cl := context.WithCancel(ctx)
 	ch := make(chan *Task)
-	return &taskMaker{ctx: c, cancel: cl, ch: ch, pg: pg, input: input}, nil
+	return &taskMaker{ctx: c, cancel: cl, ch: ch, pg: pg, input: input, wg: &sync.WaitGroup{}}, nil
 }
 func (tm *taskMaker) channel() <-chan *Task {
 	return tm.ch
@@ -151,8 +153,14 @@ loop:
 		for it.HasNext() {
 			p := it.Next()
 			log.Println("push new task ", p.Proto, host, p.Port)
-			tm.ch <- &Task{Host: host, Pro: p.Proto, Port: p.Port}
+			task := &Task{Host: host, Pro: p.Proto, Port: p.Port, Ack: tm.done}
+			tm.ch <- task
+			tm.wg.Add(1)
 		}
 	}
+	tm.wg.Wait()
 	return nil
+}
+func (tm *taskMaker) done() {
+	tm.wg.Done()
 }
