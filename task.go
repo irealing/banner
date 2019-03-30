@@ -153,14 +153,16 @@ loop:
 		for it.HasNext() {
 			p := it.Next()
 			log.Println("push new task ", p.Proto, host, p.Port)
-			task := &Task{Host: host, Pro: p.Proto, Port: p.Port, Ack: tm.done}
+			task := &Task{Host: host, Pro: p.Proto, Port: p.Port, Ack: tm}
 			tm.ch <- task
-			tm.wg.Add(1)
 		}
 	}
 	tm.wg.Wait()
 	return nil
 }
-func (tm *taskMaker) done() {
+func (tm *taskMaker) Ready() {
+	tm.wg.Add(1)
+}
+func (tm *taskMaker) Ack() {
 	tm.wg.Done()
 }

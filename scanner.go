@@ -37,12 +37,14 @@ loop:
 				break loop
 			}
 			log.Debug("recv new task", task.Pro, task.Host, task.Port)
-			if ret, err := scanner.capture(task); err != nil {
+			task.Ack.Ready()
+			ret, err := scanner.capture(task)
+			task.Ack.Ack()
+			if err != nil {
 				continue loop
 			} else {
 				scanner.writer <- ret
 			}
-			task.Ack()
 		}
 	}
 	scanner.wg.Done()

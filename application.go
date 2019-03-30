@@ -17,6 +17,7 @@ type Scheduler struct {
 	writer    *os.File
 	writeChan chan *Result
 	cfg       *AppConfig
+	closeOnce sync.Once
 }
 
 func NewScheduler(cfg *AppConfig) (*Scheduler, error) {
@@ -63,6 +64,10 @@ loop:
 	}
 }
 func (scheduler *Scheduler) Close() {
+	scheduler.closeOnce.Do(scheduler.close)
+}
+func (scheduler *Scheduler) close() {
+	log.Info("scheduler exit...")
 	scheduler.cancel()
 	scheduler.wg.Wait()
 	close(scheduler.writeChan)
