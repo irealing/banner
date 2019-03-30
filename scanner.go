@@ -37,14 +37,14 @@ loop:
 	for {
 		select {
 		case <-scanner.ctx.Done():
-			log.Info("scanner context done", scanner.id)
+			log.Infof("scanner %d context done", scanner.id)
 			break loop
 		case task, ok := <-scanner.task:
 			if !ok {
-				log.Info("task queue closed")
+				log.Info("task queue closed scanner ", scanner.id)
 				break loop
 			}
-			log.Debug("recv new task", task.Pro, task.Host, task.Port)
+			log.Debug("recv new task", task.Pro, task.Host, task.Port, scanner.id)
 			task.Ack.Ready()
 			ret, err := scanner.capture(task)
 			task.Ack.Ack()

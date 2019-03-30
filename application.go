@@ -69,7 +69,6 @@ func (scheduler *Scheduler) Close() {
 func (scheduler *Scheduler) close() {
 	log.Info("scheduler exit ...")
 	scheduler.cancel()
-	log.Debug("wait all scanner exit")
 	scheduler.wg.Wait()
 	log.Debug("all scanner exit")
 	close(scheduler.writeChan)

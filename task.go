@@ -158,8 +158,8 @@ loop:
 			}
 		}
 	}
-	log.Debug("wait all ready tasks ack")
 	tm.wg.Wait()
+	log.Debug("all ready tasks ack")
 	return nil
 }
 func (tm *taskMaker) Ready() {
