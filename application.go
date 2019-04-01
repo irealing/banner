@@ -16,7 +16,6 @@ type Scheduler struct {
 	writer    *os.File
 	cfg       *AppConfig
 	closeOnce sync.Once
-	saver     Saver
 }
 
 func NewScheduler(cfg *AppConfig) (*Scheduler, error) {
@@ -24,10 +23,9 @@ func NewScheduler(cfg *AppConfig) (*Scheduler, error) {
 	if err != nil {
 		return nil, err
 	}
-	saver := newTextSaver(writer)
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
-	return &Scheduler{cfg: cfg, ctx: ctx, cancel: cancel, wg: wg, writer: writer, saver: saver}, nil
+	return &Scheduler{cfg: cfg, ctx: ctx, cancel: cancel, wg: wg, writer: writer}, nil
 }
 func (scheduler *Scheduler) Run() error {
 	cfg := scheduler.cfg
@@ -36,13 +34,15 @@ func (scheduler *Scheduler) Run() error {
 		return err
 	}
 	defer tm.Close()
+	saver := newTextSaver(scheduler.writer)
+	defer saver.Close()
 	var i uint
 	for ; i < scheduler.cfg.Go; i++ {
 		http.DefaultClient.Timeout = time.Duration(scheduler.cfg.TTL) * time.Second
-		s := NewScanner(scheduler.ctx, tm.channel(), scheduler.saver, http.DefaultClient, scheduler.wg)
+		s := NewScanner(scheduler.ctx, tm.channel(), saver, http.DefaultClient, scheduler.wg)
 		go s.Run()
 	}
-	go scheduler.saver.Run()
+	go saver.Run()
 	return tm.Run()
 }
 func (scheduler *Scheduler) Close() {
@@ -53,6 +53,7 @@ func (scheduler *Scheduler) close() {
 	scheduler.cancel()
 	scheduler.wg.Wait()
 	log.Debug("all scanner exit")
-	scheduler.saver.Close()
-	scheduler.writer.Close()
+	if err := scheduler.writer.Close(); err != nil {
+		log.Warn("failed to close file ", scheduler.writer.Name())
+	}
 }

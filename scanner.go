@@ -50,7 +50,6 @@ loop:
 			ret, err := scanner.capture(task)
 			task.Ack.Ack()
 			if err != nil {
-				log.Debug("failed to execute task", task)
 				continue loop
 			} else {
 				scanner.saver.Save(ret)
@@ -63,6 +62,7 @@ loop:
 func (scanner *Scanner) capture(task *Task) (*Result, error) {
 	resp, err := scanner.request(task.URL())
 	if err != nil {
+		log.Warn("failed to request ", task.URL(), err)
 		return nil, err
 	}
 	defer resp.Body.Close()
