@@ -1,14 +1,14 @@
 package main
 
 import (
-	"errors"
-	"os"
-	"encoding/csv"
-	"strconv"
-	"context"
-	"io"
 	"bufio"
+	"context"
+	"encoding/csv"
+	"errors"
 	"github.com/qiniu/log"
+	"io"
+	"os"
+	"strconv"
 	"sync"
 )
 

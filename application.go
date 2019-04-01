@@ -2,11 +2,10 @@ package main
 
 import (
 	"context"
-	"sync"
-	"os"
-	"net/http"
-	"fmt"
 	"github.com/qiniu/log"
+	"net/http"
+	"os"
+	"sync"
 	"time"
 )
 
@@ -15,9 +14,9 @@ type Scheduler struct {
 	cancel    context.CancelFunc
 	wg        *sync.WaitGroup
 	writer    *os.File
-	writeChan chan *Result
 	cfg       *AppConfig
 	closeOnce sync.Once
+	saver     Saver
 }
 
 func NewScheduler(cfg *AppConfig) (*Scheduler, error) {
@@ -25,10 +24,10 @@ func NewScheduler(cfg *AppConfig) (*Scheduler, error) {
 	if err != nil {
 		return nil, err
 	}
+	saver := newTextSaver(writer)
 	ctx, cancel := context.WithCancel(context.Background())
-	writeChan := make(chan *Result, cfg.Go)
 	wg := &sync.WaitGroup{}
-	return &Scheduler{cfg: cfg, ctx: ctx, cancel: cancel, wg: wg, writer: writer, writeChan: writeChan}, nil
+	return &Scheduler{cfg: cfg, ctx: ctx, cancel: cancel, wg: wg, writer: writer, saver: saver}, nil
 }
 func (scheduler *Scheduler) Run() error {
 	cfg := scheduler.cfg
@@ -40,28 +39,12 @@ func (scheduler *Scheduler) Run() error {
 	var i uint
 	for ; i < scheduler.cfg.Go; i++ {
 		http.DefaultClient.Timeout = time.Duration(scheduler.cfg.TTL) * time.Second
-		s := NewScanner(scheduler.ctx, tm.channel(), scheduler.writeChan, http.DefaultClient, scheduler.wg)
+		s := NewScanner(scheduler.ctx, tm.channel(), scheduler.saver, http.DefaultClient, scheduler.wg)
 		scheduler.wg.Add(1)
 		go s.Run()
 	}
-	go scheduler.save()
+	go scheduler.saver.Run()
 	return tm.Run()
-}
-func (scheduler *Scheduler) save() {
-loop:
-	for {
-		select {
-		case <-scheduler.ctx.Done():
-			break loop
-		case r, ok := <-scheduler.writeChan:
-			if ok && r != nil {
-				log.Info("recv result ", r.String())
-				scheduler.writer.WriteString(fmt.Sprintf("%s,%d,%s,%s\n", r.Host, r.Port, r.Server, r.Title))
-			} else if !ok {
-				break loop
-			}
-		}
-	}
 }
 func (scheduler *Scheduler) Close() {
 	scheduler.closeOnce.Do(scheduler.close)
@@ -71,6 +54,6 @@ func (scheduler *Scheduler) close() {
 	scheduler.cancel()
 	scheduler.wg.Wait()
 	log.Debug("all scanner exit")
-	close(scheduler.writeChan)
+	scheduler.saver.Close()
 	scheduler.writer.Close()
 }

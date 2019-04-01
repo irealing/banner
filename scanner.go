@@ -1,13 +1,13 @@
 package main
 
 import (
-	"context"
-	"github.com/qiniu/log"
-	"net/http"
-	"io"
 	"bytes"
-	"regexp"
+	"context"
 	"errors"
+	"github.com/qiniu/log"
+	"io"
+	"net/http"
+	"regexp"
 	"sync"
 	"sync/atomic"
 )
@@ -19,15 +19,15 @@ type Scanner struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 	task   <-chan *Task
-	writer chan<- *Result
+	saver  Saver
 	client *http.Client
 	wg     *sync.WaitGroup
 }
 
-func NewScanner(ctx context.Context, tc <-chan *Task, w chan<- *Result, client *http.Client, wg *sync.WaitGroup) *Scanner {
+func NewScanner(ctx context.Context, tc <-chan *Task, saver Saver, client *http.Client, wg *sync.WaitGroup) *Scanner {
 	id := atomic.AddInt32(&globalScannerId, 1)
 	c, cl := context.WithCancel(ctx)
-	return &Scanner{id: id, ctx: c, cancel: cl, task: tc, writer: w, client: client, wg: wg}
+	return &Scanner{id: id, ctx: c, cancel: cl, task: tc, saver: saver, client: client, wg: wg}
 }
 func (scanner *Scanner) ID() int32 {
 	return scanner.id
@@ -51,7 +51,7 @@ loop:
 			if err != nil {
 				continue loop
 			} else {
-				scanner.writer <- ret
+				scanner.saver.Save(ret)
 			}
 		}
 	}
@@ -88,7 +88,7 @@ func (scanner *Scanner) getTitle(r io.Reader) (string, error) {
 	if value == emptyString {
 		return value, errors.New("找不到结果")
 	}
-	return value[7: len(value)-8], nil
+	return value[7 : len(value)-8], nil
 }
 func (scanner *Scanner) Close() {
 	scanner.cancel()

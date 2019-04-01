@@ -2,8 +2,8 @@ package main
 
 import (
 	"errors"
-	"github.com/qiniu/log"
 	"github.com/irealing/argsparser"
+	"github.com/qiniu/log"
 )
 
 const (
