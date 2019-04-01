@@ -1,13 +1,13 @@
 package main
 
 import (
-	"context"
-	"github.com/qiniu/log"
-	"net/http"
-	"io"
 	"bytes"
-	"regexp"
+	"context"
 	"errors"
+	"github.com/qiniu/log"
+	"io"
+	"net/http"
+	"regexp"
 	"sync"
 	"sync/atomic"
 )
@@ -19,20 +19,21 @@ type Scanner struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 	task   <-chan *Task
-	writer chan<- *Result
+	saver  Saver
 	client *http.Client
 	wg     *sync.WaitGroup
 }
 
-func NewScanner(ctx context.Context, tc <-chan *Task, w chan<- *Result, client *http.Client, wg *sync.WaitGroup) *Scanner {
+func NewScanner(ctx context.Context, tc <-chan *Task, saver Saver, client *http.Client, wg *sync.WaitGroup) *Scanner {
 	id := atomic.AddInt32(&globalScannerId, 1)
 	c, cl := context.WithCancel(ctx)
-	return &Scanner{id: id, ctx: c, cancel: cl, task: tc, writer: w, client: client, wg: wg}
+	return &Scanner{id: id, ctx: c, cancel: cl, task: tc, saver: saver, client: client, wg: wg}
 }
 func (scanner *Scanner) ID() int32 {
 	return scanner.id
 }
 func (scanner *Scanner) Run() {
+	scanner.wg.Add(1)
 loop:
 	for {
 		select {
@@ -51,7 +52,7 @@ loop:
 			if err != nil {
 				continue loop
 			} else {
-				scanner.writer <- ret
+				scanner.saver.Save(ret)
 			}
 		}
 	}
@@ -61,6 +62,7 @@ loop:
 func (scanner *Scanner) capture(task *Task) (*Result, error) {
 	resp, err := scanner.request(task.URL())
 	if err != nil {
+		log.Warn("failed to request ", task.URL(), err)
 		return nil, err
 	}
 	defer resp.Body.Close()
@@ -69,7 +71,7 @@ func (scanner *Scanner) capture(task *Task) (*Result, error) {
 	return &Result{Host: task.Host, Pro: task.Pro, Port: task.Port, Server: server, Title: title}, nil
 }
 func (scanner *Scanner) request(url string) (*http.Response, error) {
-	log.Debug("request url ", url)
+	log.Debugf("scanner %d request url %s", scanner.id, url)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		log.Debug("failed to load", err)

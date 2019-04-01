@@ -2,11 +2,10 @@ package main
 
 import (
 	"context"
-	"sync"
-	"os"
-	"net/http"
-	"fmt"
 	"github.com/qiniu/log"
+	"net/http"
+	"os"
+	"sync"
 	"time"
 )
 
@@ -15,7 +14,6 @@ type Scheduler struct {
 	cancel    context.CancelFunc
 	wg        *sync.WaitGroup
 	writer    *os.File
-	writeChan chan *Result
 	cfg       *AppConfig
 	closeOnce sync.Once
 }
@@ -26,41 +24,32 @@ func NewScheduler(cfg *AppConfig) (*Scheduler, error) {
 		return nil, err
 	}
 	ctx, cancel := context.WithCancel(context.Background())
-	writeChan := make(chan *Result, cfg.Go)
 	wg := &sync.WaitGroup{}
-	return &Scheduler{cfg: cfg, ctx: ctx, cancel: cancel, wg: wg, writer: writer, writeChan: writeChan}, nil
+	return &Scheduler{cfg: cfg, ctx: ctx, cancel: cancel, wg: wg, writer: writer}, nil
 }
 func (scheduler *Scheduler) Run() error {
 	cfg := scheduler.cfg
-	tm, err := newMaker(cfg.Input, cfg.Port, scheduler.ctx)
+	tm, err := newMaker(cfg.Input, cfg.Port, scheduler.cfg.Go, scheduler.ctx)
 	if err != nil {
 		return err
 	}
 	defer tm.Close()
-	var i uint
-	for ; i < scheduler.cfg.Go; i++ {
-		http.DefaultClient.Timeout = time.Duration(scheduler.cfg.TTL) * time.Second
-		s := NewScanner(scheduler.ctx, tm.channel(), scheduler.writeChan, http.DefaultClient, scheduler.wg)
-		scheduler.wg.Add(1)
-		go s.Run()
-	}
-	go scheduler.save()
-	return tm.Run()
+	saver := newTextSaver(scheduler.writer)
+	defer saver.Close()
+	http.DefaultClient.Timeout = time.Duration(scheduler.cfg.TTL) * time.Second
+	go saver.Run()
+	return tm.Run(scheduler.startGo(tm, saver))
 }
-func (scheduler *Scheduler) save() {
-loop:
-	for {
-		select {
-		case <-scheduler.ctx.Done():
-			break loop
-		case r, ok := <-scheduler.writeChan:
-			if ok && r != nil {
-				log.Info("recv result ", r.String())
-				scheduler.writer.WriteString(fmt.Sprintf("%s,%d,%s,%s\n", r.Host, r.Port, r.Server, r.Title))
-			} else if !ok {
-				break loop
-			}
+func (scheduler *Scheduler) startGo(tm *taskMaker, saver Saver) func() {
+	var i = new(uint)
+	return func() {
+		if *i >= scheduler.cfg.Go {
+			return
 		}
+		*i += 1
+		log.Debug("start goroutine", *i)
+		s := NewScanner(scheduler.ctx, tm.channel(), saver, http.DefaultClient, scheduler.wg)
+		go s.Run()
 	}
 }
 func (scheduler *Scheduler) Close() {
@@ -71,6 +60,7 @@ func (scheduler *Scheduler) close() {
 	scheduler.cancel()
 	scheduler.wg.Wait()
 	log.Debug("all scanner exit")
-	close(scheduler.writeChan)
-	scheduler.writer.Close()
+	if err := scheduler.writer.Close(); err != nil {
+		log.Warn("failed to close file ", scheduler.writer.Name())
+	}
 }

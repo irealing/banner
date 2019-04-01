@@ -1,7 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"github.com/qiniu/log"
+	"os"
+	"sync"
+	"encoding/csv"
+	"strconv"
 )
 
 const (
@@ -37,4 +43,56 @@ type Task struct {
 
 func (t *Task) URL() string {
 	return fmt.Sprintf("%s://%s:%d/", t.Pro, t.Host, t.Port)
+}
+
+type Saver interface {
+	Save(result *Result)
+	Run()
+	Close()
+}
+type textSaver struct {
+	wg     sync.WaitGroup
+	file   *os.File
+	ctx    context.Context
+	cancel context.CancelFunc
+	wc     chan *Result
+}
+
+func (ts *textSaver) Run() {
+	writer := csv.NewWriter(ts.file)
+loop:
+	for {
+		select {
+		case <-ts.ctx.Done():
+			break loop
+		case r, ok := <-ts.wc:
+			if !ok {
+				break loop
+			}
+			line := []string{r.Host, strconv.FormatUint(uint64(r.Port), 10), r.Server, r.Title}
+			if err := writer.Write(line); err != nil {
+				log.Warn("failed to write csv ", err)
+			}
+			ts.wg.Done()
+			log.Debug("saver add -1")
+		}
+	}
+	writer.Flush()
+	ts.wg.Wait()
+}
+
+func (ts *textSaver) Save(result *Result) {
+	ts.wc <- result
+	ts.wg.Add(1)
+	log.Debug("saver result ", result)
+}
+
+func (ts *textSaver) Close() {
+	ts.wg.Wait()
+	ts.cancel()
+	close(ts.wc)
+}
+func newTextSaver(writer *os.File) Saver {
+	ctx, cancel := context.WithCancel(context.Background())
+	return &textSaver{file: writer, ctx: ctx, cancel: cancel, wc: make(chan *Result)}
 }
