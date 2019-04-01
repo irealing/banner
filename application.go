@@ -29,21 +29,28 @@ func NewScheduler(cfg *AppConfig) (*Scheduler, error) {
 }
 func (scheduler *Scheduler) Run() error {
 	cfg := scheduler.cfg
-	tm, err := newMaker(cfg.Input, cfg.Port, scheduler.ctx)
+	tm, err := newMaker(cfg.Input, cfg.Port, scheduler.cfg.Go, scheduler.ctx)
 	if err != nil {
 		return err
 	}
 	defer tm.Close()
 	saver := newTextSaver(scheduler.writer)
 	defer saver.Close()
-	var i uint
-	for ; i < scheduler.cfg.Go; i++ {
-		http.DefaultClient.Timeout = time.Duration(scheduler.cfg.TTL) * time.Second
+	http.DefaultClient.Timeout = time.Duration(scheduler.cfg.TTL) * time.Second
+	go saver.Run()
+	return tm.Run(scheduler.startGo(tm, saver))
+}
+func (scheduler *Scheduler) startGo(tm *taskMaker, saver Saver) func() {
+	var i = new(uint)
+	return func() {
+		if *i >= scheduler.cfg.Go {
+			return
+		}
+		*i += 1
+		log.Debug("start goroutine", *i)
 		s := NewScanner(scheduler.ctx, tm.channel(), saver, http.DefaultClient, scheduler.wg)
 		go s.Run()
 	}
-	go saver.Run()
-	return tm.Run()
 }
 func (scheduler *Scheduler) Close() {
 	scheduler.closeOnce.Do(scheduler.close)
