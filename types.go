@@ -6,6 +6,8 @@ import (
 	"github.com/qiniu/log"
 	"os"
 	"sync"
+	"encoding/csv"
+	"strconv"
 )
 
 const (
@@ -57,6 +59,7 @@ type textSaver struct {
 }
 
 func (ts *textSaver) Run() {
+	writer := csv.NewWriter(ts.file)
 loop:
 	for {
 		select {
@@ -66,14 +69,15 @@ loop:
 			if !ok {
 				break loop
 			}
-			s := fmt.Sprintf("%s,%d,%s,%s", r.Host, r.Port, r.Server, r.Title)
-			if _, err := ts.file.WriteString(s); err != nil {
-				log.Warn("failed to write string ", s)
+			line := []string{r.Host, strconv.FormatUint(uint64(r.Port), 10), r.Server, r.Title}
+			if err := writer.Write(line); err != nil {
+				log.Warn("failed to write csv ", err)
 			}
 			ts.wg.Done()
 			log.Debug("saver add -1")
 		}
 	}
+	writer.Flush()
 	ts.wg.Wait()
 }
 

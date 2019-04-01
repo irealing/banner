@@ -71,7 +71,7 @@ func (scanner *Scanner) capture(task *Task) (*Result, error) {
 	return &Result{Host: task.Host, Pro: task.Pro, Port: task.Port, Server: server, Title: title}, nil
 }
 func (scanner *Scanner) request(url string) (*http.Response, error) {
-	log.Debug("request url ", url)
+	log.Debugf("scanner %d request url %s", scanner.id, url)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		log.Debug("failed to load", err)
@@ -90,7 +90,7 @@ func (scanner *Scanner) getTitle(r io.Reader) (string, error) {
 	if value == emptyString {
 		return value, errors.New("找不到结果")
 	}
-	return value[7 : len(value)-8], nil
+	return value[7: len(value)-8], nil
 }
 func (scanner *Scanner) Close() {
 	scanner.cancel()
