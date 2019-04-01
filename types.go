@@ -80,7 +80,7 @@ loop:
 func (ts *textSaver) Save(result *Result) {
 	ts.wc <- result
 	ts.wg.Add(1)
-	log.Debug("saver add 1")
+	log.Debug("saver result ", result)
 }
 
 func (ts *textSaver) Close() {

@@ -40,7 +40,6 @@ func (scheduler *Scheduler) Run() error {
 	for ; i < scheduler.cfg.Go; i++ {
 		http.DefaultClient.Timeout = time.Duration(scheduler.cfg.TTL) * time.Second
 		s := NewScanner(scheduler.ctx, tm.channel(), scheduler.saver, http.DefaultClient, scheduler.wg)
-		scheduler.wg.Add(1)
 		go s.Run()
 	}
 	go scheduler.saver.Run()

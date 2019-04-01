@@ -33,6 +33,7 @@ func (scanner *Scanner) ID() int32 {
 	return scanner.id
 }
 func (scanner *Scanner) Run() {
+	scanner.wg.Add(1)
 loop:
 	for {
 		select {
@@ -49,6 +50,7 @@ loop:
 			ret, err := scanner.capture(task)
 			task.Ack.Ack()
 			if err != nil {
+				log.Debug("failed to execute task", task)
 				continue loop
 			} else {
 				scanner.saver.Save(ret)
