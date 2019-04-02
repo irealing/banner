@@ -41,13 +41,13 @@ func (scheduler *Scheduler) Run() error {
 	return tm.Run(scheduler.startGo(tm, saver))
 }
 func (scheduler *Scheduler) startGo(tm *taskMaker, saver Saver) func() {
-	var i = new(uint)
+	var i uint
 	return func() {
-		if *i >= scheduler.cfg.Go {
+		if i >= scheduler.cfg.Go {
 			return
 		}
-		*i += 1
-		log.Debug("start goroutine", *i)
+		i += 1
+		log.Debug("start goroutine", i)
 		s := NewScanner(scheduler.ctx, tm.channel(), saver, http.DefaultClient, scheduler.wg)
 		go s.Run()
 	}

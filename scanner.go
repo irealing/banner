@@ -46,7 +46,7 @@ loop:
 				break loop
 			}
 			log.Debug("recv new task", task.Pro, task.Host, task.Port, scanner.id)
-			task.Ack.Ready()
+			//task.Ack.Ready()
 			ret, err := scanner.capture(task)
 			task.Ack.Ack()
 			if err != nil {
@@ -90,7 +90,7 @@ func (scanner *Scanner) getTitle(r io.Reader) (string, error) {
 	if value == emptyString {
 		return value, errors.New("找不到结果")
 	}
-	return value[7: len(value)-8], nil
+	return value[7 : len(value)-8], nil
 }
 func (scanner *Scanner) Close() {
 	scanner.cancel()
