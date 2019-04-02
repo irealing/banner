@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"github.com/qiniu/log"
 	"net/http"
 	"os"
@@ -37,6 +38,8 @@ func (scheduler *Scheduler) Run() error {
 	saver := newTextSaver(scheduler.writer)
 	defer saver.Close()
 	http.DefaultClient.Timeout = time.Duration(scheduler.cfg.TTL) * time.Second
+	http.DefaultTransport = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
+	http.DefaultClient.Transport = http.DefaultTransport
 	go saver.Run()
 	return tm.Run(scheduler.startGo(tm, saver))
 }
