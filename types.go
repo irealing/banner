@@ -59,9 +59,11 @@ type textSaver struct {
 
 func (ts *textSaver) Run() {
 	writer := csv.NewWriter(ts.file)
+	defer ts.wg.Done()
 	for {
 		r, ok := <-ts.wc
 		if !ok {
+			log.Debug("textSaver break")
 			break
 		}
 		line := []string{r.Host, strconv.FormatUint(uint64(r.Port), 10), r.Server, r.Title}
@@ -70,7 +72,6 @@ func (ts *textSaver) Run() {
 		}
 		ts.wg.Done()
 		log.Debug("saver add -1")
-
 	}
 	writer.Flush()
 }
@@ -84,7 +85,9 @@ func (ts *textSaver) Save(result *Result) {
 func (ts *textSaver) Close() {
 	ts.wg.Wait()
 	close(ts.wc)
+	ts.wg.Add(1)
+	ts.wg.Wait()
 }
-func newTextSaver(writer *os.File) Saver {
-	return &textSaver{file: writer, wc: make(chan *Result)}
+func newTextSaver(writer *os.File, cache uint) Saver {
+	return &textSaver{file: writer, wc: make(chan *Result, cache)}
 }

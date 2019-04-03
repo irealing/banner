@@ -42,7 +42,7 @@ func (scheduler *Scheduler) Run() error {
 	if err != nil {
 		return err
 	}
-	saver := newTextSaver(scheduler.writer)
+	saver := newTextSaver(scheduler.writer, cfg.Go)
 	defer saver.Close()
 	defer scheduler.wg.Wait()
 	defer tm.Close()
