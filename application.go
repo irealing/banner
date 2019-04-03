@@ -14,7 +14,6 @@ type Scheduler struct {
 	ctx       context.Context
 	cancel    context.CancelFunc
 	wg        *sync.WaitGroup
-	writer    *os.File
 	cfg       *AppConfig
 	closeOnce sync.Once
 }
@@ -28,13 +27,9 @@ func (scheduler *Scheduler) Ack() {
 }
 
 func NewScheduler(cfg *AppConfig) (*Scheduler, error) {
-	writer, err := os.Create(cfg.Output)
-	if err != nil {
-		return nil, err
-	}
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
-	return &Scheduler{cfg: cfg, ctx: ctx, cancel: cancel, wg: wg, writer: writer}, nil
+	return &Scheduler{cfg: cfg, ctx: ctx, cancel: cancel, wg: wg}, nil
 }
 func (scheduler *Scheduler) Run() error {
 	cfg := scheduler.cfg
@@ -42,15 +37,25 @@ func (scheduler *Scheduler) Run() error {
 	if err != nil {
 		return err
 	}
-	saver := newTextSaver(scheduler.writer, cfg.Go)
+	file, err := os.Create(scheduler.cfg.Output)
+	if err != nil {
+		log.Warn("failed to create output file ", err)
+		return err
+	}
+	defer file.Close()
+	saver := newTextSaver(file, cfg.Go)
 	defer saver.Close()
 	defer scheduler.wg.Wait()
 	defer tm.Close()
+	scheduler.makeHttpClient()
+	go saver.Run()
+	return tm.Run(scheduler.startGo(tm, saver))
+}
+func (scheduler *Scheduler) makeHttpClient() *http.Client {
 	http.DefaultClient.Timeout = time.Duration(scheduler.cfg.TTL) * time.Second
 	http.DefaultTransport = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
 	http.DefaultClient.Transport = http.DefaultTransport
-	go saver.Run()
-	return tm.Run(scheduler.startGo(tm, saver))
+	return http.DefaultClient
 }
 func (scheduler *Scheduler) startGo(tm *taskMaker, saver Saver) func() {
 	var i uint
@@ -71,8 +76,4 @@ func (scheduler *Scheduler) Close() {
 func (scheduler *Scheduler) close() {
 	log.Info("scheduler exit ...")
 	scheduler.cancel()
-	log.Debug("all scanner exit")
-	if err := scheduler.writer.Close(); err != nil {
-		log.Warn("failed to close file ", scheduler.writer.Name())
-	}
 }
