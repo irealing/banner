@@ -29,6 +29,7 @@ func (scanner *Scanner) ID() int32 {
 }
 func (scanner *Scanner) Run() {
 	defer scanner.ack.Ack()
+	c := 0
 loop:
 	for {
 		select {
@@ -41,9 +42,12 @@ loop:
 			//task.Ack.Ready()
 			ret, err := scanner.capture(task)
 			task.Ack.Ack()
+			c++
 			if err != nil {
+				log.Infof("scanner %d execute task %s-%d failed", scanner.id, scanner.id, c)
 				continue loop
 			} else {
+				log.Infof("scanner %d execute task %s-%d success %s", scanner.id, scanner.id, c, ret.String())
 				scanner.saver.Save(ret)
 			}
 		}
@@ -53,7 +57,7 @@ loop:
 func (scanner *Scanner) capture(task *Task) (*Result, error) {
 	resp, err := scanner.request(task.URL())
 	if err != nil {
-		log.Warn("failed to request ", task.URL(), err)
+		log.Debug("failed to request ", task.URL(), err)
 		return nil, err
 	}
 	defer resp.Body.Close()
