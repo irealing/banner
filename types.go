@@ -51,34 +51,28 @@ type Saver interface {
 	Close()
 }
 type textSaver struct {
-	wg     sync.WaitGroup
-	file   *os.File
-	ctx    context.Context
-	cancel context.CancelFunc
-	wc     chan *Result
+	wg   sync.WaitGroup
+	file *os.File
+	ctx  context.Context
+	wc   chan *Result
 }
 
 func (ts *textSaver) Run() {
 	writer := csv.NewWriter(ts.file)
-loop:
 	for {
-		select {
-		case <-ts.ctx.Done():
-			break loop
-		case r, ok := <-ts.wc:
-			if !ok {
-				break loop
-			}
-			line := []string{r.Host, strconv.FormatUint(uint64(r.Port), 10), r.Server, r.Title}
-			if err := writer.Write(line); err != nil {
-				log.Warn("failed to write csv ", err)
-			}
-			ts.wg.Done()
-			log.Debug("saver add -1")
+		r, ok := <-ts.wc
+		if !ok {
+			break
 		}
+		line := []string{r.Host, strconv.FormatUint(uint64(r.Port), 10), r.Server, r.Title}
+		if err := writer.Write(line); err != nil {
+			log.Warn("failed to write csv ", err)
+		}
+		ts.wg.Done()
+		log.Debug("saver add -1")
+
 	}
 	writer.Flush()
-	ts.wg.Wait()
 }
 
 func (ts *textSaver) Save(result *Result) {
@@ -89,10 +83,8 @@ func (ts *textSaver) Save(result *Result) {
 
 func (ts *textSaver) Close() {
 	ts.wg.Wait()
-	ts.cancel()
 	close(ts.wc)
 }
 func newTextSaver(writer *os.File) Saver {
-	ctx, cancel := context.WithCancel(context.Background())
-	return &textSaver{file: writer, ctx: ctx, cancel: cancel, wc: make(chan *Result)}
+	return &textSaver{file: writer, wc: make(chan *Result)}
 }

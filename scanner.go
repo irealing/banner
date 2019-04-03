@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"regexp"
-	"sync"
 	"sync/atomic"
 )
 
@@ -18,19 +17,18 @@ type Scanner struct {
 	task   <-chan *Task
 	saver  Saver
 	client *http.Client
-	wg     *sync.WaitGroup
+	ack    Ack
 }
 
-func NewScanner(tc <-chan *Task, saver Saver, client *http.Client, wg *sync.WaitGroup) *Scanner {
+func NewScanner(tc <-chan *Task, saver Saver, client *http.Client, ack Ack) *Scanner {
 	id := atomic.AddInt32(&globalScannerId, 1)
-	return &Scanner{id: id, task: tc, saver: saver, client: client, wg: wg}
+	return &Scanner{id: id, task: tc, saver: saver, client: client, ack: ack}
 }
 func (scanner *Scanner) ID() int32 {
 	return scanner.id
 }
 func (scanner *Scanner) Run() {
-	scanner.wg.Add(1)
-	defer scanner.wg.Done()
+	defer scanner.ack.Ack()
 loop:
 	for {
 		select {

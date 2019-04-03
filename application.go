@@ -19,6 +19,14 @@ type Scheduler struct {
 	closeOnce sync.Once
 }
 
+func (scheduler *Scheduler) Ready() {
+	scheduler.wg.Add(1)
+}
+
+func (scheduler *Scheduler) Ack() {
+	scheduler.wg.Done()
+}
+
 func NewScheduler(cfg *AppConfig) (*Scheduler, error) {
 	writer, err := os.Create(cfg.Output)
 	if err != nil {
@@ -52,7 +60,8 @@ func (scheduler *Scheduler) startGo(tm *taskMaker, saver Saver) func() {
 		}
 		i += 1
 		log.Debug("start goroutine", i)
-		s := NewScanner(tm.channel(), saver, http.DefaultClient, scheduler.wg)
+		s := NewScanner(tm.channel(), saver, http.DefaultClient, scheduler)
+		scheduler.Ready()
 		go s.Run()
 	}
 }
