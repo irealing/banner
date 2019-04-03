@@ -141,7 +141,7 @@ loop:
 		line, _, err := reader.ReadLine()
 		host := string(line)
 		if err != nil {
-			log.Warn("read file error", err)
+			log.Warn("taskMaker read file error", err)
 			break
 		}
 		it.Reset()

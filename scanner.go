@@ -44,10 +44,10 @@ loop:
 			task.Ack.Ack()
 			c++
 			if err != nil {
-				log.Infof("scanner %d execute task %s-%d failed", scanner.id, scanner.id, c)
+				log.Infof("scanner %d execute task %d-%d failed", scanner.id, scanner.id, c)
 				continue loop
 			} else {
-				log.Infof("scanner %d execute task %s-%d success %s", scanner.id, scanner.id, c, ret.String())
+				log.Infof("scanner %d execute task %d-%d success %s", scanner.id, scanner.id, c, ret.String())
 				scanner.saver.Save(ret)
 			}
 		}
