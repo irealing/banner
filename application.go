@@ -2,11 +2,11 @@ package main
 
 import (
 	"context"
-	"sync"
-	"os"
-	"net/http"
-	"fmt"
+	"crypto/tls"
 	"github.com/qiniu/log"
+	"net/http"
+	"os"
+	"sync"
 	"time"
 )
 
@@ -14,53 +14,60 @@ type Scheduler struct {
 	ctx       context.Context
 	cancel    context.CancelFunc
 	wg        *sync.WaitGroup
-	writer    *os.File
-	writeChan chan *Result
 	cfg       *AppConfig
 	closeOnce sync.Once
 }
 
+func (scheduler *Scheduler) Ready() {
+	scheduler.wg.Add(1)
+}
+
+func (scheduler *Scheduler) Ack() {
+	scheduler.wg.Done()
+}
+
 func NewScheduler(cfg *AppConfig) (*Scheduler, error) {
-	writer, err := os.Create(cfg.Output)
-	if err != nil {
-		return nil, err
-	}
 	ctx, cancel := context.WithCancel(context.Background())
-	writeChan := make(chan *Result, cfg.Go)
 	wg := &sync.WaitGroup{}
-	return &Scheduler{cfg: cfg, ctx: ctx, cancel: cancel, wg: wg, writer: writer, writeChan: writeChan}, nil
+	return &Scheduler{cfg: cfg, ctx: ctx, cancel: cancel, wg: wg}, nil
 }
 func (scheduler *Scheduler) Run() error {
 	cfg := scheduler.cfg
-	tm, err := newMaker(cfg.Input, cfg.Port, scheduler.ctx)
+	tm, err := newMaker(cfg.Input, cfg.Port, scheduler.cfg.Go, scheduler.ctx)
 	if err != nil {
 		return err
 	}
-	defer tm.Close()
-	var i uint
-	for ; i < scheduler.cfg.Go; i++ {
-		http.DefaultClient.Timeout = time.Duration(scheduler.cfg.TTL) * time.Second
-		s := NewScanner(scheduler.ctx, tm.channel(), scheduler.writeChan, http.DefaultClient, scheduler.wg)
-		scheduler.wg.Add(1)
-		go s.Run()
+	file, err := os.Create(scheduler.cfg.Output)
+	if err != nil {
+		log.Warn("failed to create output file ", err)
+		return err
 	}
-	go scheduler.save()
-	return tm.Run()
+	defer file.Close()
+	saver := newTextSaver(file, cfg.Go)
+	defer saver.Close()
+	defer scheduler.wg.Wait()
+	defer tm.Close()
+	scheduler.makeHttpClient()
+	go saver.Run()
+	return tm.Run(scheduler.startGo(tm, saver))
 }
-func (scheduler *Scheduler) save() {
-loop:
-	for {
-		select {
-		case <-scheduler.ctx.Done():
-			break loop
-		case r, ok := <-scheduler.writeChan:
-			if ok && r != nil {
-				log.Info("recv result ", r.String())
-				scheduler.writer.WriteString(fmt.Sprintf("%s,%d,%s,%s\n", r.Host, r.Port, r.Server, r.Title))
-			} else if !ok {
-				break loop
-			}
+func (scheduler *Scheduler) makeHttpClient() *http.Client {
+	http.DefaultClient.Timeout = time.Duration(scheduler.cfg.TTL) * time.Second
+	http.DefaultTransport = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
+	http.DefaultClient.Transport = http.DefaultTransport
+	return http.DefaultClient
+}
+func (scheduler *Scheduler) startGo(tm *taskMaker, saver Saver) func() {
+	var i uint
+	return func() {
+		if i >= scheduler.cfg.Go {
+			return
 		}
+		i += 1
+		log.Debug("start goroutine", i)
+		s := NewScanner(tm.channel(), saver, http.DefaultClient, scheduler)
+		scheduler.Ready()
+		go s.Run()
 	}
 }
 func (scheduler *Scheduler) Close() {
@@ -69,8 +76,4 @@ func (scheduler *Scheduler) Close() {
 func (scheduler *Scheduler) close() {
 	log.Info("scheduler exit ...")
 	scheduler.cancel()
-	scheduler.wg.Wait()
-	log.Debug("all scanner exit")
-	close(scheduler.writeChan)
-	scheduler.writer.Close()
 }

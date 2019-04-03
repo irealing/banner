@@ -1,14 +1,14 @@
 package main
 
 import (
-	"errors"
-	"os"
-	"encoding/csv"
-	"strconv"
-	"context"
-	"io"
 	"bufio"
+	"context"
+	"encoding/csv"
+	"errors"
 	"github.com/qiniu/log"
+	"io"
+	"os"
+	"strconv"
 	"sync"
 )
 
@@ -112,7 +112,7 @@ type taskMaker struct {
 	wg     *sync.WaitGroup
 }
 
-func newMaker(host, port string, ctx context.Context) (*taskMaker, error) {
+func newMaker(host, port string, cc uint, ctx context.Context) (*taskMaker, error) {
 	pg, err := NewPortGetter(port)
 	if err != nil {
 		return nil, err
@@ -122,7 +122,7 @@ func newMaker(host, port string, ctx context.Context) (*taskMaker, error) {
 		return nil, err
 	}
 	c, cl := context.WithCancel(ctx)
-	ch := make(chan *Task)
+	ch := make(chan *Task, cc)
 	return &taskMaker{ctx: c, cancel: cl, ch: ch, pg: pg, input: input, wg: &sync.WaitGroup{}}, nil
 }
 func (tm *taskMaker) channel() <-chan *Task {
@@ -133,7 +133,7 @@ func (tm *taskMaker) Close() {
 	tm.input.Close()
 	close(tm.ch)
 }
-func (tm *taskMaker) Run() error {
+func (tm *taskMaker) Run(callback func()) error {
 	reader := bufio.NewReader(tm.input)
 	it, _ := tm.pg.Iter()
 loop:
@@ -154,7 +154,11 @@ loop:
 				p := it.Next()
 				log.Println("push new task ", p.Proto, host, p.Port)
 				task := &Task{Host: host, Pro: p.Proto, Port: p.Port, Ack: tm}
+				tm.Ready()
 				tm.ch <- task
+				if callback != nil {
+					callback()
+				}
 			}
 		}
 	}
