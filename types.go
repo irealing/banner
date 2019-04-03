@@ -2,12 +2,12 @@ package main
 
 import (
 	"context"
+	"encoding/csv"
 	"fmt"
 	"github.com/qiniu/log"
 	"os"
-	"sync"
-	"encoding/csv"
 	"strconv"
+	"sync"
 )
 
 const (

@@ -34,9 +34,10 @@ func (scheduler *Scheduler) Run() error {
 	if err != nil {
 		return err
 	}
-	defer tm.Close()
 	saver := newTextSaver(scheduler.writer)
 	defer saver.Close()
+	defer scheduler.wg.Wait()
+	defer tm.Close()
 	http.DefaultClient.Timeout = time.Duration(scheduler.cfg.TTL) * time.Second
 	http.DefaultTransport = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
 	http.DefaultClient.Transport = http.DefaultTransport
@@ -51,7 +52,7 @@ func (scheduler *Scheduler) startGo(tm *taskMaker, saver Saver) func() {
 		}
 		i += 1
 		log.Debug("start goroutine", i)
-		s := NewScanner(scheduler.ctx, tm.channel(), saver, http.DefaultClient, scheduler.wg)
+		s := NewScanner(tm.channel(), saver, http.DefaultClient, scheduler.wg)
 		go s.Run()
 	}
 }
@@ -61,7 +62,6 @@ func (scheduler *Scheduler) Close() {
 func (scheduler *Scheduler) close() {
 	log.Info("scheduler exit ...")
 	scheduler.cancel()
-	scheduler.wg.Wait()
 	log.Debug("all scanner exit")
 	if err := scheduler.writer.Close(); err != nil {
 		log.Warn("failed to close file ", scheduler.writer.Name())
