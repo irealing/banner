@@ -57,7 +57,7 @@ func (scheduler *Scheduler) makeHttpClient() *http.Client {
 		TLSClientConfig:   &tls.Config{InsecureSkipVerify: true},
 		DisableKeepAlives: true,
 	}
-	client := &http.Client{Transport: transport, Timeout: time.Duration(scheduler.cfg.TTL)}
+	client := &http.Client{Transport: transport, Timeout: time.Duration(scheduler.cfg.TTL) * time.Second}
 	return client
 }
 func (scheduler *Scheduler) startGo(tm *taskMaker, saver Saver) func() {

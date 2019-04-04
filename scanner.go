@@ -36,7 +36,7 @@ loop:
 		select {
 		case task, ok := <-scanner.task:
 			if !ok {
-				log.Info("task queue closed scanner ", scanner.id)
+				log.Infof("task queue closed, scanner %d exit", scanner.id)
 				break loop
 			}
 			log.Debug("recv new task", task.Pro, task.Host, task.Port, scanner.id)
@@ -53,7 +53,7 @@ loop:
 			}
 		}
 	}
-	log.Infof("scanner %d stopped %d", scanner.id, c)
+	log.Infof("scanner %d stopped，after %d times request ", scanner.id, c)
 }
 func (scanner *Scanner) capture(task *Task) (*Result, error) {
 	resp, err := scanner.request(task.URL())
