@@ -31,8 +31,9 @@ $ go build
 -if : 输入文件;
 -of : 输出文件;
 -go : 启动的协程数;
--log : 日志级别(debug/info/warn/error)
--port : 端口文件名
+-log : 日志级别(debug/info/warn/error)；
+-port : 端口文件名；
+-ttl: 请求超时时间；
 ```
 *Unix-like系统限制ulimit数，go参数设置过大可能导致请求失败*
 
@@ -46,7 +47,7 @@ $./binner -if input.txt -of target.txt -go 100
 ### 输入文件格式
 
  每行一个主机地址,如下:
- 
+
 ```
 118.244.113.239
 42.225.64.15
@@ -65,7 +66,7 @@ $./binner -if input.txt -of target.txt -go 100
 
 ### 自定义端口及协议
 
-添加`pots.csv`文件(目前未实现自定义端口文件名称),格式如下:
+添加`pots.csv`文件,格式如下:
 
 ```csv
 https,443
