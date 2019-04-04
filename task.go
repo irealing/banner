@@ -5,11 +5,12 @@ import (
 	"context"
 	"encoding/csv"
 	"errors"
-	"github.com/qiniu/log"
 	"io"
 	"os"
 	"strconv"
 	"sync"
+
+	"github.com/qiniu/log"
 )
 
 type Protocol string

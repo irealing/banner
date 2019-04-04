@@ -3,11 +3,12 @@ package main
 import (
 	"bytes"
 	"errors"
-	"github.com/qiniu/log"
 	"io"
 	"net/http"
 	"regexp"
 	"sync/atomic"
+
+	"github.com/qiniu/log"
 )
 
 var globalScannerId int32

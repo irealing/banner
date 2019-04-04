@@ -1,10 +1,11 @@
 package main
 
 import (
-	"github.com/qiniu/log"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/qiniu/log"
 )
 
 func main() {

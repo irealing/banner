@@ -3,11 +3,12 @@ package main
 import (
 	"context"
 	"crypto/tls"
-	"github.com/qiniu/log"
 	"net/http"
 	"os"
 	"sync"
 	"time"
+
+	"github.com/qiniu/log"
 )
 
 type Scheduler struct {
