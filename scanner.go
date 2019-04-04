@@ -45,7 +45,7 @@ loop:
 			task.Ack.Ack()
 			c++
 			if err != nil {
-				log.Infof("scanner %d execute task %d-%d failed", scanner.id, scanner.id, c)
+				log.Infof("scanner %d execute task %d-%d failed %s", scanner.id, scanner.id, c, task.URL())
 				continue loop
 			} else {
 				log.Infof("scanner %d execute task %d-%d success %s", scanner.id, scanner.id, c, ret.String())
@@ -53,7 +53,7 @@ loop:
 			}
 		}
 	}
-	log.Debug("scanner done", scanner.id)
+	log.Infof("scanner %d stopped %d", scanner.id, c)
 }
 func (scanner *Scanner) capture(task *Task) (*Result, error) {
 	resp, err := scanner.request(task.URL())

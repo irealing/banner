@@ -62,13 +62,14 @@ func (scheduler *Scheduler) makeHttpClient() *http.Client {
 }
 func (scheduler *Scheduler) startGo(tm *taskMaker, saver Saver) func() {
 	var i uint
+	client := scheduler.makeHttpClient()
 	return func() {
 		if i >= scheduler.cfg.Go {
 			return
 		}
 		i += 1
 		log.Debug("start goroutine", i)
-		s := NewScanner(tm.channel(), saver, http.DefaultClient, scheduler)
+		s := NewScanner(tm.channel(), saver, client, scheduler)
 		scheduler.Ready()
 		go s.Run()
 	}
