@@ -3,11 +3,12 @@ package main
 import (
 	"context"
 	"crypto/tls"
-	"github.com/qiniu/log"
 	"net/http"
 	"os"
 	"sync"
 	"time"
+
+	"github.com/qiniu/log"
 )
 
 type Scheduler struct {
@@ -52,10 +53,12 @@ func (scheduler *Scheduler) Run() error {
 	return tm.Run(scheduler.startGo(tm, saver))
 }
 func (scheduler *Scheduler) makeHttpClient() *http.Client {
-	http.DefaultClient.Timeout = time.Duration(scheduler.cfg.TTL) * time.Second
-	http.DefaultTransport = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
-	http.DefaultClient.Transport = http.DefaultTransport
-	return http.DefaultClient
+	transport := &http.Transport{
+		TLSClientConfig:   &tls.Config{InsecureSkipVerify: true},
+		DisableKeepAlives: true,
+	}
+	client := &http.Client{Transport: transport, Timeout: time.Duration(scheduler.cfg.TTL)}
+	return client
 }
 func (scheduler *Scheduler) startGo(tm *taskMaker, saver Saver) func() {
 	var i uint

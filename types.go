@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/csv"
 	"fmt"
-	"github.com/qiniu/log"
 	"os"
 	"strconv"
 	"sync"
+
+	"github.com/qiniu/log"
 )
 
 const (

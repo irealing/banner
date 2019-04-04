@@ -5,11 +5,12 @@ import (
 	"context"
 	"encoding/csv"
 	"errors"
-	"github.com/qiniu/log"
 	"io"
 	"os"
 	"strconv"
 	"sync"
+
+	"github.com/qiniu/log"
 )
 
 type Protocol string
@@ -141,7 +142,7 @@ loop:
 		line, _, err := reader.ReadLine()
 		host := string(line)
 		if err != nil {
-			log.Warn("read file error", err)
+			log.Warn("taskMaker read file error", err)
 			break
 		}
 		it.Reset()
@@ -152,7 +153,7 @@ loop:
 				break loop
 			default:
 				p := it.Next()
-				log.Println("push new task ", p.Proto, host, p.Port)
+				log.Debug("push new task ", p.Proto, host, p.Port)
 				task := &Task{Host: host, Pro: p.Proto, Port: p.Port, Ack: tm}
 				tm.Ready()
 				tm.ch <- task
